@@ -1,0 +1,559 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "# ARTI 403 \u2014 Image Processing Lab 1\n",
+        "\n",
+        "## Loading, displaying, saving, and representing digital images\n",
+        "\n",
+        "This notebook completes the tasks in the Student Procedural Manual while explaining each step. It uses:\n",
+        "\n",
+        "- **OpenCV** to load and save the cameraman image.\n",
+        "- **PIL (Pillow)** to load and save `lena_gray_256.tif`.\n",
+        "- **Matplotlib** to display images.\n",
+        "- **NumPy** to inspect and manipulate image arrays.\n",
+        "- **scikit-image** to obtain the cameraman sample from the webpage supplied with the lab.\n",
+        "\n",
+        "Run the cells from top to bottom. In Cursor or Jupyter, click a cell and press **Shift + Enter**.\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Learning outcomes\n",
+        "\n",
+        "After finishing this notebook, you should be able to:\n",
+        "\n",
+        "1. Explain that a digital image is stored as a NumPy array of pixel values.\n",
+        "2. Load images using OpenCV and PIL.\n",
+        "3. Display images using Matplotlib.\n",
+        "4. Save images to disk.\n",
+        "5. Inspect image shape, dimensions, data type, and pixel values.\n",
+        "6. Perform basic image operations with NumPy.\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## 0. Install the required packages\n",
+        "\n",
+        "You only need to do this once. If the imports in the next cell fail, open Cursor's terminal and run:\n",
+        "\n",
+        "```powershell\n",
+        "python -m pip install numpy matplotlib pillow scikit-image opencv-python jupyter\n",
+        "```\n",
+        "\n",
+        "After installation, restart the notebook kernel and continue.\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## 1. Import the libraries\n",
+        "\n",
+        "Importing makes the functions from each library available in the notebook.\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "from pathlib import Path\n",
+        "\n",
+        "import cv2\n",
+        "import matplotlib.pyplot as plt\n",
+        "import numpy as np\n",
+        "from PIL import Image\n",
+        "from skimage import data\n",
+        "\n",
+        "print(\"Libraries imported successfully.\")\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## 2. Prepare the image and results folders\n",
+        "\n",
+        "The notebook expects this arrangement:\n",
+        "\n",
+        "```text\n",
+        "outputs/\n",
+        "\u251c\u2500\u2500 Lab_1_Image_Processing.ipynb\n",
+        "\u2514\u2500\u2500 Images/\n",
+        "    \u2514\u2500\u2500 lena_gray_256.tif\n",
+        "```\n",
+        "\n",
+        "The `lab1_results` folder is created automatically. Your original Lena file will not be changed.\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "BASE_DIR = Path.cwd()\n",
+        "IMAGES_DIR = BASE_DIR / \"Images\"\n",
+        "RESULTS_DIR = BASE_DIR / \"lab1_results\"\n",
+        "RESULTS_DIR.mkdir(exist_ok=True)\n",
+        "\n",
+        "lena_path = IMAGES_DIR / \"lena_gray_256.tif\"\n",
+        "\n",
+        "print(\"Notebook folder:\", BASE_DIR)\n",
+        "print(\"Images folder:\", IMAGES_DIR)\n",
+        "print(\"Results folder:\", RESULTS_DIR)\n",
+        "\n",
+        "if not lena_path.exists():\n",
+        "    raise FileNotFoundError(\n",
+        "        f\"Could not find {lena_path}. Put lena_gray_256.tif inside the Images folder.\"\n",
+        "    )\n",
+        "\n",
+        "print(\"Lena image found:\", lena_path)\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## 3. Obtain the cameraman image\n",
+        "\n",
+        "The lab manual refers to `images/cameraman.tif`. The supplied scikit-image webpage provides the same standard cameraman image through `data.camera()`. This cell retrieves the built-in sample and saves it in the `Images` folder so OpenCV can read it from disk.\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "IMAGES_DIR.mkdir(exist_ok=True)\n",
+        "\n",
+        "cameraman_array = data.camera()\n",
+        "cameraman_path = IMAGES_DIR / \"cameraman.tif\"\n",
+        "Image.fromarray(cameraman_array).save(cameraman_path)\n",
+        "\n",
+        "print(\"Cameraman saved to:\", cameraman_path)\n",
+        "print(\"Shape:\", cameraman_array.shape)\n",
+        "print(\"Data type:\", cameraman_array.dtype)\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Task 2A \u2014 Load and visualize an image using OpenCV\n",
+        "\n",
+        "`cv2.imread()` reads the image file and returns a NumPy array. `cv2.IMREAD_GRAYSCALE` keeps this image as a two-dimensional grayscale array.\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "img_cv = cv2.imread(str(cameraman_path), cv2.IMREAD_GRAYSCALE)\n",
+        "\n",
+        "if img_cv is None:\n",
+        "    raise FileNotFoundError(f\"OpenCV could not read {cameraman_path}\")\n",
+        "\n",
+        "plt.figure(figsize=(6, 6))\n",
+        "plt.imshow(img_cv, cmap=\"gray\", vmin=0, vmax=255)\n",
+        "plt.title(\"Cameraman \u2014 loaded with OpenCV\")\n",
+        "plt.axis(\"off\")\n",
+        "plt.show()\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Task 2B \u2014 Load and visualize an image using PIL\n",
+        "\n",
+        "`Image.open()` returns a PIL Image object. Matplotlib can display that object directly. The grayscale colormap prevents Matplotlib from adding artificial colors.\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "img_pil = Image.open(lena_path)\n",
+        "\n",
+        "plt.figure(figsize=(6, 6))\n",
+        "plt.imshow(img_pil, cmap=\"gray\", vmin=0, vmax=255)\n",
+        "plt.title(\"Lena \u2014 loaded with PIL\")\n",
+        "plt.axis(\"off\")\n",
+        "plt.show()\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Task 3 \u2014 Store images on disk\n",
+        "\n",
+        "OpenCV uses `cv2.imwrite()`, while PIL Image objects use `.save()`. These commands create new files inside `lab1_results`.\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "opencv_saved_path = RESULTS_DIR / \"cameraman_saved_with_opencv.jpg\"\n",
+        "pil_saved_path = RESULTS_DIR / \"lena_saved_with_pil.jpg\"\n",
+        "\n",
+        "opencv_success = cv2.imwrite(str(opencv_saved_path), img_cv)\n",
+        "img_pil.save(pil_saved_path)\n",
+        "\n",
+        "print(\"OpenCV save successful:\", opencv_success)\n",
+        "print(\"OpenCV output:\", opencv_saved_path)\n",
+        "print(\"PIL output:\", pil_saved_path)\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Task 4A \u2014 Display the OpenCV image as an array\n",
+        "\n",
+        "For a grayscale image, the shape is `(height, width)`. Each number is a brightness value:\n",
+        "\n",
+        "- `0` means black.\n",
+        "- `255` means white.\n",
+        "- Values between them are shades of gray.\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "print(\"Python type:\", type(img_cv))\n",
+        "print(\"Shape:\", img_cv.shape)\n",
+        "print(\"Number of dimensions:\", img_cv.ndim)\n",
+        "print(\"Data type:\", img_cv.dtype)\n",
+        "print()\n",
+        "print(\"OpenCV image array:\")\n",
+        "print(img_cv)\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Task 4B \u2014 Convert the PIL image to a NumPy array\n",
+        "\n",
+        "PIL uses an Image object. `np.array()` converts it into the array representation required for numerical operations.\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "img_array = np.array(img_pil)\n",
+        "\n",
+        "print(\"PIL object type:\", type(img_pil))\n",
+        "print(\"Converted array type:\", type(img_array))\n",
+        "print(\"Shape:\", img_array.shape)\n",
+        "print(\"Number of dimensions:\", img_array.ndim)\n",
+        "print(\"Data type:\", img_array.dtype)\n",
+        "print()\n",
+        "print(\"Lena image array:\")\n",
+        "print(img_array)\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Assessment \u2014 Basic NumPy operations\n",
+        "\n",
+        "The following cells demonstrate typical operations an instructor may ask you to perform on an image array.\n",
+        "\n",
+        "### A. Image statistics\n",
+        "\n",
+        "The minimum, maximum, and mean summarize the image's pixel intensities.\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "print(\"Minimum pixel value:\", img_array.min())\n",
+        "print(\"Maximum pixel value:\", img_array.max())\n",
+        "print(\"Mean pixel value:\", round(float(img_array.mean()), 2))\n",
+        "print(\"Standard deviation:\", round(float(img_array.std()), 2))\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "### B. Access and change one pixel\n",
+        "\n",
+        "Array indexing uses `[row, column]`. The top-left pixel is at `[0, 0]`.\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "row, column = 100, 100\n",
+        "print(f\"Pixel at row {row}, column {column}:\", img_array[row, column])\n",
+        "\n",
+        "pixel_example = img_array.copy()\n",
+        "pixel_example[row, column] = 255\n",
+        "print(\"The copied pixel was changed to:\", pixel_example[row, column])\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "### C. Crop part of the image\n",
+        "\n",
+        "Slicing selects a range of rows and columns. The ending number is not included.\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "cropped = img_array[50:200, 50:200]\n",
+        "\n",
+        "plt.figure(figsize=(5, 5))\n",
+        "plt.imshow(cropped, cmap=\"gray\", vmin=0, vmax=255)\n",
+        "plt.title(\"Cropped Lena [50:200, 50:200]\")\n",
+        "plt.axis(\"off\")\n",
+        "plt.show()\n",
+        "\n",
+        "print(\"Original shape:\", img_array.shape)\n",
+        "print(\"Cropped shape:\", cropped.shape)\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "### D. Create a negative image\n",
+        "\n",
+        "For an 8-bit image, subtracting each pixel from `255` reverses dark and light areas.\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "negative = 255 - img_array\n",
+        "\n",
+        "plt.figure(figsize=(5, 5))\n",
+        "plt.imshow(negative, cmap=\"gray\", vmin=0, vmax=255)\n",
+        "plt.title(\"Negative image\")\n",
+        "plt.axis(\"off\")\n",
+        "plt.show()\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "### E. Increase brightness\n",
+        "\n",
+        "Adding `50` makes pixels brighter. Conversion to a larger integer type before addition prevents overflow; `np.clip()` keeps the final values between 0 and 255.\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "brighter = np.clip(img_array.astype(np.int16) + 50, 0, 255).astype(np.uint8)\n",
+        "\n",
+        "plt.figure(figsize=(5, 5))\n",
+        "plt.imshow(brighter, cmap=\"gray\", vmin=0, vmax=255)\n",
+        "plt.title(\"Brightness increased by 50\")\n",
+        "plt.axis(\"off\")\n",
+        "plt.show()\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "### F. Flip the image horizontally\n",
+        "\n",
+        "`[:, ::-1]` keeps all rows and reverses the column order.\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "flipped = img_array[:, ::-1]\n",
+        "\n",
+        "plt.figure(figsize=(5, 5))\n",
+        "plt.imshow(flipped, cmap=\"gray\", vmin=0, vmax=255)\n",
+        "plt.title(\"Horizontally flipped\")\n",
+        "plt.axis(\"off\")\n",
+        "plt.show()\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "### G. Create a binary image using a threshold\n",
+        "\n",
+        "Pixels above the threshold become white (`255`), and the remaining pixels become black (`0`).\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "threshold_value = 128\n",
+        "binary = np.where(img_array > threshold_value, 255, 0).astype(np.uint8)\n",
+        "\n",
+        "plt.figure(figsize=(5, 5))\n",
+        "plt.imshow(binary, cmap=\"gray\", vmin=0, vmax=255)\n",
+        "plt.title(f\"Binary image \u2014 threshold = {threshold_value}\")\n",
+        "plt.axis(\"off\")\n",
+        "plt.show()\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Compare all NumPy results\n",
+        "\n",
+        "This figure makes the effect of each operation easy to compare.\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "fig, axes = plt.subplots(2, 3, figsize=(12, 8))\n",
+        "\n",
+        "results = [\n",
+        "    (img_array, \"Original Lena\"),\n",
+        "    (cropped, \"Cropped\"),\n",
+        "    (negative, \"Negative\"),\n",
+        "    (brighter, \"Brighter\"),\n",
+        "    (flipped, \"Flipped\"),\n",
+        "    (binary, \"Binary\"),\n",
+        "]\n",
+        "\n",
+        "for axis, (image, title) in zip(axes.flat, results):\n",
+        "    axis.imshow(image, cmap=\"gray\", vmin=0, vmax=255)\n",
+        "    axis.set_title(title)\n",
+        "    axis.axis(\"off\")\n",
+        "\n",
+        "plt.tight_layout()\n",
+        "plt.show()\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Save the NumPy results\n",
+        "\n",
+        "This cell saves each processed array as an image and saves the comparison figure.\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {},
+      "outputs": [],
+      "source": [
+        "Image.fromarray(cropped).save(RESULTS_DIR / \"lena_cropped.png\")\n",
+        "Image.fromarray(negative).save(RESULTS_DIR / \"lena_negative.png\")\n",
+        "Image.fromarray(brighter).save(RESULTS_DIR / \"lena_brighter.png\")\n",
+        "Image.fromarray(flipped).save(RESULTS_DIR / \"lena_flipped.png\")\n",
+        "Image.fromarray(binary).save(RESULTS_DIR / \"lena_binary.png\")\n",
+        "\n",
+        "fig.savefig(RESULTS_DIR / \"numpy_operations_comparison.png\", dpi=150, bbox_inches=\"tight\")\n",
+        "\n",
+        "print(\"All result images were saved in:\", RESULTS_DIR)\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Conclusion\n",
+        "\n",
+        "In this lab:\n",
+        "\n",
+        "- OpenCV and PIL loaded images from disk.\n",
+        "- Matplotlib displayed the images.\n",
+        "- OpenCV and PIL saved new image files.\n",
+        "- NumPy represented each grayscale image as a two-dimensional array.\n",
+        "- Each array element stored one pixel intensity from 0 to 255.\n",
+        "- NumPy slicing and arithmetic produced crops, negatives, brightness changes, flips, and binary images.\n",
+        "\n",
+        "### Questions to check your understanding\n",
+        "\n",
+        "1. Why does a grayscale image have two dimensions?\n",
+        "2. What do the values `0` and `255` represent?\n",
+        "3. What is the difference between a PIL Image object and a NumPy array?\n",
+        "4. Why do we use `np.clip()` when increasing brightness?\n",
+        "5. What happens when you change the binary threshold from `128` to `80` or `180`?\n"
+      ]
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "display_name": "Python 3",
+      "language": "python",
+      "name": "python3"
+    },
+    "language_info": {
+      "name": "python",
+      "version": "3.12",
+      "mimetype": "text/x-python",
+      "codemirror_mode": {
+        "name": "ipython",
+        "version": 3
+      },
+      "pygments_lexer": "ipython3",
+      "nbconvert_exporter": "python",
+      "file_extension": ".py"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}
